@@ -28,6 +28,7 @@ module Stack.Graph
     simplify,
     edgeSet,
     vertexSet,
+    lookupScope,
     removeEdge,
     addEdge,
     transpose,
@@ -73,6 +74,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Data.Semilattice.Lower
 import Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Scope.Types as Scope
 import Source.Loc
 import Source.Span
@@ -192,6 +194,9 @@ removeEdge a b = Graph . Algebraic.removeEdge a b . unGraph
 
 transpose :: Graph a -> Graph a
 transpose = Graph . Algebraic.transpose . unGraph
+
+lookupScope :: Symbol -> Graph Node -> Maybe Node
+lookupScope name = Set.lookupLE (Scope name) . Algebraic.vertexSet . unGraph
 
 addEdge :: Ord a => a -> a -> Graph a -> Graph a
 addEdge a b = simplify . Graph . Algebraic.overlay (Algebraic.edge a b) . unGraph
