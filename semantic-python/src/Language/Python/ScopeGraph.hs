@@ -25,9 +25,9 @@ where
 
 import AST.Element
 import qualified Analysis.Name as Name
-import Control.Effect.ScopeGraph
-import qualified Control.Effect.ScopeGraph.Properties.Declaration as Props
-import qualified Control.Effect.ScopeGraph.Properties.Reference as Props
+import Control.Effect.StackGraph
+import qualified Control.Effect.StackGraph.Properties.Declaration as Props
+import qualified Control.Effect.StackGraph.Properties.Reference as Props
 import Control.Effect.State
 import Control.Lens ((^.))
 import Data.Foldable
@@ -52,7 +52,7 @@ import qualified Stack.Graph as Stack
 -- every single Python AST type.
 class (forall a. Show a => Show (t a)) => ToScopeGraph t where
   scopeGraph ::
-    ( ScopeGraphEff sig m,
+    ( StackGraphEff sig m,
       Monoid (m Result)
     ) =>
     t Loc ->
@@ -64,7 +64,7 @@ instance (ToScopeGraph l, ToScopeGraph r) => ToScopeGraph (l :+: r) where
 
 onField ::
   forall (field :: Symbol) syn sig m r.
-  ( ScopeGraphEff sig m,
+  ( StackGraphEff sig m,
     HasField field (r Loc) (syn Loc),
     ToScopeGraph syn,
     Monoid (m Result)
@@ -78,7 +78,7 @@ onField =
 onChildren ::
   ( Traversable t,
     ToScopeGraph syn,
-    ScopeGraphEff sig m,
+    StackGraphEff sig m,
     HasField "extraChildren" (r Loc) (t (syn Loc)),
     Monoid (m Result)
   ) =>
@@ -89,7 +89,7 @@ onChildren =
     . traverse scopeGraph
     . getField @"extraChildren"
 
-scopeGraphModule :: ScopeGraphEff sig m => Py.Module Loc -> m Result
+scopeGraphModule :: StackGraphEff sig m => Py.Module Loc -> m Result
 scopeGraphModule = getAp . scopeGraph
 
 instance ToScopeGraph Py.AssertStatement where scopeGraph = onChildren
@@ -248,10 +248,8 @@ instance ToScopeGraph Py.FutureImportStatement where scopeGraph = todo
 instance ToScopeGraph Py.GeneratorExpression where scopeGraph = todo
 
 instance ToScopeGraph Py.Identifier where
-  scopeGraph (Py.Identifier ann name) = do
-    let refProps = Props.Reference ScopeGraph.Identifier ScopeGraph.Default (ann ^. span_ :: Span)
-    newReference (Name.name name) refProps
-    complete
+  -- TODO: Should Py.Identifier mutate state?
+  scopeGraph = todo
 
 instance ToScopeGraph Py.IfStatement where
   scopeGraph (Py.IfStatement _ alternative body condition) =
@@ -283,9 +281,8 @@ instance ToScopeGraph Py.ImportStatement where
   scopeGraph term = todo (show term)
 
 instance ToScopeGraph Py.ImportFromStatement where
-  scopeGraph (Py.ImportFromStatement _ [] (L1 (Py.DottedName _ names)) (Just (Py.WildcardImport _ _))) = do
-    let toName (Py.Identifier _ name) = Name.name name
-    complete <* newEdge ScopeGraph.Import (toName <$> names)
+  -- TODO: Implement this
+  scopeGraph term@(Py.ImportFromStatement _ [] (L1 (Py.DottedName _ names)) (Just (Py.WildcardImport _ _))) = todo term
   scopeGraph (Py.ImportFromStatement _ imports (L1 (Py.DottedName _ names@((Py.Identifier ann scopeName) :| _))) Nothing) = do
     -- let toName (Py.Identifier _ name) = Name.name name
     -- newEdge ScopeGraph.Import (toName <$> names)

@@ -15,45 +15,70 @@
 -- | This carrier interprets the Sketch effect, keeping track of
 -- the current scope and in-progress graph internally.
 module Control.Carrier.Sketch.ScopeGraph
-  ( SketchC
-  , runSketch
-  , module Control.Effect.ScopeGraph
-  ) where
+  ( SketchC,
+    runSketch,
+    module Control.Effect.StackGraph,
+  )
+where
 
-import           Analysis.Name (Name)
+import Analysis.Name (Name)
 import qualified Analysis.Name as Name
-import           Control.Carrier.Fresh.Strict
-import           Control.Carrier.Reader
-import           Control.Carrier.State.Strict
-import           Control.Effect.ScopeGraph
-import           Data.Module (ModuleInfo)
+import Control.Carrier.Fresh.Strict
+import Control.Carrier.Reader
+import qualified Control.Carrier.Resumable.Either as Either
+import Control.Carrier.State.Strict
+import Control.Effect.StackGraph
+import Data.BaseError (BaseError)
+import Data.Module (ModuleInfo)
 import qualified Data.ScopeGraph as ScopeGraph
-import           Data.Semilattice.Lower
-import           Scope.Types
+import Data.Semilattice.Lower
+import Scope.Types
+import Source.Loc (Loc)
 import qualified Stack.Graph as Stack
 
-type SketchC addr m
-  = StateC (ScopeGraph Name)
-  ( StateC (Stack.Graph Stack.Node)
-  ( StateC (CurrentScope Name)
-  ( ReaderC Stack.Node
-  ( ReaderC ModuleInfo
-  ( FreshC m
-  )))))
+type SketchC addr m =
+  Either.ResumableC
+    (BaseError ScopeError)
+    ( StateC
+        (ScopeGraph Name)
+        ( StateC
+            (Stack.Graph Stack.Node)
+            ( StateC
+                (CurrentScope Name)
+                ( ReaderC
+                    (Maybe Loc)
+                    ( StateC
+                        (Maybe Loc)
+                        ( ReaderC
+                            Stack.Node
+                            ( ReaderC
+                                ModuleInfo
+                                ( FreshC m
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
 
 runSketch ::
-  (Functor m)
-  => ModuleInfo
-  -> SketchC Name m a
-  -> m (Stack.Graph Stack.Node, (ScopeGraph Name, a))
-runSketch minfo go
-  = evalFresh 1
-  . runReader minfo
-  . runReader (Stack.Scope rootname)
-  . evalState (CurrentScope rootname)
-  . runState @(Stack.Graph Stack.Node) initialStackGraph
-  . runState @(ScopeGraph Name) initialGraph
-  $ go
+  (Functor m) =>
+  ModuleInfo ->
+  SketchC Name m a ->
+  m (Stack.Graph Stack.Node, (ScopeGraph Name, Either (Either.SomeError (BaseError ScopeError)) a))
+runSketch minfo go =
+  evalFresh 1
+    . runReader minfo
+    . runReader (Stack.Scope rootname)
+    . evalState Nothing
+    . runReader Nothing
+    . evalState (CurrentScope rootname)
+    . runState @(Stack.Graph Stack.Node) initialStackGraph
+    . runState @(ScopeGraph Name) initialGraph
+    . Either.runResumable
+    $ go
   where
     rootname = Name.nameI 0
     initialGraph = ScopeGraph.insertScope rootname lowerBound lowerBound
