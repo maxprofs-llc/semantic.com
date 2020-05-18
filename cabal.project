@@ -30,9 +30,3 @@ source-repository-package
   type: git
   location: https://github.com/antitypical/fused-syntax.git
   tag: d11e14581217590a5c67f79cbaeee35ac8acee6a
-
-source-repository-package
-  type: git
-  location: https://github.com/tree-sitter/haskell-tree-sitter.git
-  tag: 63d1e753f83f0b1b1951be0dc704efa9fb25ccd4
-  subdir: tree-sitter-rust
