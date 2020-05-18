@@ -10,7 +10,7 @@ import Analysis.Name (Name)
 import qualified Analysis.Name as Name
 import Control.Algebra
 import Control.Carrier.Lift
-import Control.Carrier.Sketch.ScopeGraph
+import Control.Carrier.StackGraph
 import qualified Control.Effect.StackGraph.Properties.Declaration as Props
 import qualified Control.Effect.StackGraph.Properties.Function as Props
 import qualified Control.Effect.StackGraph.Properties.Reference as Props
@@ -37,13 +37,13 @@ import qualified Test.Tasty as Tasty
 import qualified Test.Tasty.HUnit as HUnit
 
 runStackGraph :: ToScopeGraph t => Path.AbsRelFile -> Source.Source -> t Loc -> (Stack.Graph Stack.Node, Result)
-runStackGraph p _src item = (\(stack, (scopeGraph, result)) -> (stack, result)) . run . runSketch minfo $ scopeGraph item
+runStackGraph p _src item = (\(stack, (scopeGraph, result)) -> (stack, result)) . run . runStackGraph minfo $ scopeGraph item
   where
     minfo = lowerBound
 
-runStackGraphTest :: Monad m => SketchC Name m Result -> m (Stack.Graph Stack.Node, Result)
+runStackGraphTest :: Monad m => StackGraphC Name m Result -> m (Stack.Graph Stack.Node, Result)
 runStackGraphTest val = do
-  result <- runSketch lowerBound $ val
+  result <- runStackGraph lowerBound $ val
   pure ((\(stack, (scopeGraph, result)) -> (stack, result)) result)
 
 stackGraphFile :: FilePath -> IO (Stack.Graph Stack.Node, Result)

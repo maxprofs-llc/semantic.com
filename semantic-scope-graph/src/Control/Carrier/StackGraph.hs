@@ -14,9 +14,9 @@
 
 -- | This carrier interprets the Sketch effect, keeping track of
 -- the current scope and in-progress graph internally.
-module Control.Carrier.Sketch.ScopeGraph
-  ( SketchC,
-    runSketch,
+module Control.Carrier.StackGraph
+  ( StackGraphC,
+    runStackGraph,
     module Control.Effect.StackGraph,
   )
 where
@@ -36,7 +36,7 @@ import Scope.Types
 import Source.Loc (Loc)
 import qualified Stack.Graph as Stack
 
-type SketchC addr m =
+type StackGraphC addr m =
   Either.ResumableC
     (BaseError ScopeError)
     ( StateC
@@ -63,12 +63,12 @@ type SketchC addr m =
         )
     )
 
-runSketch ::
+runStackGraph ::
   (Functor m) =>
   ModuleInfo ->
-  SketchC Name m a ->
+  StackGraphC Name m a ->
   m (Stack.Graph Stack.Node, (ScopeGraph Name, Either (Either.SomeError (BaseError ScopeError)) a))
-runSketch minfo go =
+runStackGraph minfo go =
   evalFresh 1
     . runReader minfo
     . runReader (Stack.Scope rootname)

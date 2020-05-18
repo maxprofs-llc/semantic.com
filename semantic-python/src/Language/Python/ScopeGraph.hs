@@ -219,8 +219,8 @@ instance ToScopeGraph Py.FunctionDefinition where
         modify (Stack.addEdge formalParametersScope paramNode)
 
       -- Add the parent scope pointing to the formal parameters node
-      let parentScopeName = Name.name (Text.pack "ParentScope" <> name)
-          parentScope = Stack.Scope parentScopeName
+      let parentScopeName = Name.name (Text.pack "ParentScope " <> name)
+          parentScope = Stack.ParentScope parentScopeName
       modify (Stack.addEdge parentScope formalParametersScope)
 
       -- Convert the body, using the parent scope name as the root scope

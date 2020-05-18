@@ -20,7 +20,7 @@ tested-with:         GHC == 8.6.5
 
 library
   exposed-modules:
-    Control.Carrier.Sketch.ScopeGraph
+    Control.Carrier.StackGraph
     Control.Effect.StackGraph
     Control.Effect.StackGraph.Properties.Declaration
     Control.Effect.StackGraph.Properties.Function
